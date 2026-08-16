@@ -1,0 +1,349 @@
+`timescale 1ns/1ps
+
+module project_testbench;
+
+    parameter CLKS_PER_BIT = 4;
+
+    // =========================================================
+    // INPUTS
+    // =========================================================
+
+    reg clk;
+    reg rst;
+
+    reg [7:0] parallel_in;
+    reg serial_in;
+
+    reg mode_select;
+    reg send;
+
+
+    // =========================================================
+    // OUTPUTS
+    // =========================================================
+
+    wire tx;
+
+    wire [7:0] parallel_out;
+    wire parallel_valid;
+
+    wire serial_out;
+    wire serial_valid;
+
+
+    // =========================================================
+    // DUT
+    // =========================================================
+
+    Adaptive_uart #(
+        .CLKS_PER_BIT(CLKS_PER_BIT)
+    ) DUT (
+
+        .clk(clk),
+        .rst(rst),
+
+        .parallel_in(parallel_in),
+        .serial_in(serial_in),
+
+        .mode_select(mode_select),
+        .send(send),
+
+        .tx(tx),
+
+        .parallel_out(parallel_out),
+        .parallel_valid(parallel_valid),
+
+        .serial_out(serial_out),
+        .serial_valid(serial_valid)
+    );
+
+
+    // =========================================================
+    // CLOCK
+    // 10 ns clock period
+    // =========================================================
+
+    always #5 clk = ~clk;
+
+
+    // =========================================================
+    // TEST SEQUENCE
+    // =========================================================
+
+    initial begin
+
+        // -----------------------------------------------------
+        // INITIAL VALUES
+        // -----------------------------------------------------
+
+        clk = 1'b0;
+        rst = 1'b1;
+
+        parallel_in = 8'h00;
+        serial_in   = 1'b0;
+
+        mode_select = 1'b0;
+        send        = 1'b0;
+
+
+        // -----------------------------------------------------
+        // RESET
+        // -----------------------------------------------------
+
+        #20;
+        rst = 1'b0;
+
+        $display("");
+        $display("==============================================");
+        $display("       ADAPTIVE UART SIMULATION");
+        $display("==============================================");
+        $display("");
+
+
+        // =====================================================
+        // PARALLEL MODE
+        // =====================================================
+
+        mode_select = 1'b0;
+
+
+        // -----------------------------------------------------
+        // STAGE 1
+        // TX = 1C
+        // RX = 00
+        // -----------------------------------------------------
+
+        parallel_in = 8'h1C;
+
+        $display("STAGE 1 : TX = %h   RX BEFORE = %h",
+                 parallel_in, parallel_out);
+
+        send = 1'b1;
+        #10;
+        send = 1'b0;
+
+        wait(parallel_valid == 1'b1);
+
+        #1;
+
+        $display("STAGE 1 : TX = %h   RX AFTER  = %h",
+                 parallel_in, parallel_out);
+
+        wait(parallel_valid == 1'b0);
+
+
+        // -----------------------------------------------------
+        // STAGE 2
+        // TX = 01
+        // RX = 1C
+        // -----------------------------------------------------
+
+        wait(DUT.TX_UNIT.busy == 1'b0);
+
+        #20;
+
+        parallel_in = 8'h01;
+
+        $display("STAGE 2 : TX = %h   RX BEFORE = %h",
+                 parallel_in, parallel_out);
+
+        send = 1'b1;
+        #10;
+        send = 1'b0;
+
+        wait(parallel_valid == 1'b1);
+
+        #1;
+
+        $display("STAGE 2 : TX = %h   RX AFTER  = %h",
+                 parallel_in, parallel_out);
+
+        wait(parallel_valid == 1'b0);
+
+
+        // -----------------------------------------------------
+        // STAGE 3
+        // TX = 2C
+        // RX = 01
+        // -----------------------------------------------------
+
+        wait(DUT.TX_UNIT.busy == 1'b0);
+
+        #20;
+
+        parallel_in = 8'h2C;
+
+        $display("STAGE 3 : TX = %h   RX BEFORE = %h",
+                 parallel_in, parallel_out);
+
+        send = 1'b1;
+        #10;
+        send = 1'b0;
+
+        wait(parallel_valid == 1'b1);
+
+        #1;
+
+        $display("STAGE 3 : TX = %h   RX AFTER  = %h",
+                 parallel_in, parallel_out);
+
+        wait(parallel_valid == 1'b0);
+
+
+        // -----------------------------------------------------
+        // STAGE 4
+        // TX = 10
+        // RX = 2C
+        // -----------------------------------------------------
+
+        wait(DUT.TX_UNIT.busy == 1'b0);
+
+        #20;
+
+        parallel_in = 8'h10;
+
+        $display("STAGE 4 : TX = %h   RX BEFORE = %h",
+                 parallel_in, parallel_out);
+
+        send = 1'b1;
+        #10;
+        send = 1'b0;
+
+        wait(parallel_valid == 1'b1);
+
+        #1;
+
+        $display("STAGE 4 : TX = %h   RX AFTER  = %h",
+                 parallel_in, parallel_out);
+
+        wait(parallel_valid == 1'b0);
+
+
+        // -----------------------------------------------------
+        // STAGE 5
+        // TX = 00
+        // RX = 10
+        // -----------------------------------------------------
+
+        wait(DUT.TX_UNIT.busy == 1'b0);
+
+        #20;
+
+        parallel_in = 8'h00;
+
+        $display("STAGE 5 : TX = %h   RX BEFORE = %h",
+                 parallel_in, parallel_out);
+
+        send = 1'b1;
+        #10;
+        send = 1'b0;
+
+        wait(parallel_valid == 1'b1);
+
+        #1;
+
+        $display("STAGE 5 : TX = %h   RX AFTER  = %h",
+                 parallel_in, parallel_out);
+
+        wait(parallel_valid == 1'b0);
+
+
+        // =====================================================
+        // SERIAL MODE
+        // =====================================================
+
+        mode_select = 1'b1;
+
+        #20;
+
+
+        // -----------------------------------------------------
+        // SERIAL TEST 1
+        // VALUE = A5
+        // 10100101
+        // -----------------------------------------------------
+
+        $display("");
+        $display("----------------------------------------------");
+        $display("SERIAL TEST 1 : A5");
+        $display("----------------------------------------------");
+
+        // MSB first
+
+        serial_in = 1'b1;
+
+        send = 1'b1;
+        #10;
+        send = 1'b0;
+
+        #10 serial_in = 1'b0;
+        #10 serial_in = 1'b1;
+        #10 serial_in = 1'b0;
+        #10 serial_in = 1'b0;
+        #10 serial_in = 1'b1;
+        #10 serial_in = 1'b0;
+        #10 serial_in = 1'b1;
+
+        wait(serial_valid == 1'b1);
+
+        #1;
+
+        $display("SERIAL RX OUTPUT = %b", serial_out);
+
+        wait(serial_valid == 1'b0);
+
+
+        // -----------------------------------------------------
+        // SERIAL TEST 2
+        // VALUE = 3C
+        // 00111100
+        // -----------------------------------------------------
+
+        wait(DUT.TX_UNIT.busy == 1'b0);
+
+        #20;
+
+        $display("");
+        $display("----------------------------------------------");
+        $display("SERIAL TEST 2 : 3C");
+        $display("----------------------------------------------");
+
+        // MSB first
+
+        serial_in = 1'b0;
+
+        send = 1'b1;
+        #10;
+        send = 1'b0;
+
+        #10 serial_in = 1'b0;
+        #10 serial_in = 1'b1;
+        #10 serial_in = 1'b1;
+        #10 serial_in = 1'b1;
+        #10 serial_in = 1'b1;
+        #10 serial_in = 1'b0;
+        #10 serial_in = 1'b0;
+
+        wait(serial_valid == 1'b1);
+
+        #1;
+
+        $display("SERIAL RX OUTPUT = %b", serial_out);
+
+
+        // =====================================================
+        // FINISH
+        // =====================================================
+
+        #100;
+
+        $display("");
+        $display("==============================================");
+        $display("       SIMULATION COMPLETED");
+        $display("==============================================");
+
+        $finish;
+
+    end
+
+endmodule
