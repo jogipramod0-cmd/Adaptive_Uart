@@ -1,1 +1,57 @@
+`timescale 1ns/1ps
 
+module Adaptive_uart #(
+    parameter CLKS_PER_BIT = 4
+)(
+    input clk,
+    input rst,
+
+    input [7:0] parallel_in,
+    input serial_in,
+
+    input mode_select,
+    input send,
+
+    output tx,
+
+    output [7:0] parallel_out,
+    output parallel_valid,
+
+    output serial_out,
+    output serial_valid
+);
+
+wire tx_busy;
+
+ universal_tx #(
+    .CLKS_PER_BIT(CLKS_PER_BIT)
+) TX_UNIT(
+    .clk(clk),
+    .rst(rst),
+
+    .parallel_in(parallel_in),
+    .serial_in(serial_in),
+
+    .mode_select(mode_select),
+    .send(send),
+
+    .tx(tx),
+    .busy(tx_busy)
+);
+universal_rx #(
+    .CLKS_PER_BIT(CLKS_PER_BIT)
+) RX_UNIT(
+    .clk(clk),
+    .rst(rst),
+
+    .rx(tx),
+    .mode_select(mode_select),
+
+    .parallel_out(parallel_out),
+    .parallel_valid(parallel_valid),
+
+    .serial_out(serial_out),
+    .serial_valid(serial_valid)
+);
+
+endmodule
