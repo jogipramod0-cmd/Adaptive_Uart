@@ -1,0 +1,48 @@
+`timescale 1ns/1ps
+
+module universal_rx #(
+    parameter CLKS_PER_BIT = 4
+)(
+    input clk,
+    input rst,
+
+    input rx,
+    input mode_select,
+
+    output [7:0] parallel_out,
+    output parallel_valid,
+
+    output serial_out,
+    output serial_valid
+);
+
+    wire [7:0] received_data;
+    wire received_valid;
+
+
+    // UART Receiver
+    uart_rx #(
+        .CLKS_PER_BIT(CLKS_PER_BIT)
+    ) UART_RX (
+        .clk(clk),
+        .rst(rst),
+        .rx(rx),
+        .data_out(received_data),
+        .data_valid(received_valid)
+    );
+
+
+    // Received Data Demultiplexer
+    rx_data_demux RX_DATA_DEMUX (
+        .data_in(received_data),
+        .mode_select(mode_select),
+        .valid(received_valid),
+
+        .parallel_data(parallel_out),
+        .parallel_valid(parallel_valid),
+
+        .serial_data(serial_out),
+        .serial_valid(serial_valid)
+    );
+
+endmodule
