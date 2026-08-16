@@ -1,0 +1,117 @@
+`timescale 1ns/1ps
+
+module uart_rx #(
+    parameter CLKS_PER_BIT = 4
+)(
+    input clk,
+    input rst,
+    input rx,
+    output reg [7:0] data_out,
+    output reg data_valid
+);
+
+localparam IDLE  = 2'd0;
+localparam START = 2'd1;
+localparam DATA  = 2'd2;
+localparam STOP  = 2'd3;
+
+reg [1:0] state;
+reg [7:0] data_reg;
+reg [2:0] bit_count;
+reg [15:0] clk_count;
+
+always @(posedge clk or posedge rst) begin
+
+    if (rst) begin
+        state <= IDLE;
+        data_reg <= 8'b0;
+        data_out <= 8'b0;
+        data_valid <= 1'b0;
+        bit_count <= 0;
+        clk_count <= 0;
+    end
+
+    else begin
+
+        data_valid <= 1'b0;
+
+        case (state)
+
+            IDLE: begin
+
+                clk_count <= 0;
+                bit_count <= 0;
+
+                if (rx == 1'b0)
+                    state <= START;
+
+            end
+
+            START: begin
+
+                if (clk_count == (CLKS_PER_BIT/2)-1) begin
+
+                    clk_count <= 0;
+
+                    if (rx == 1'b0)
+                        state <= DATA;
+                    else
+                        state <= IDLE;
+
+                end
+
+                else
+                    clk_count <= clk_count + 1'b1;
+
+            end
+
+            DATA: begin
+
+                if (clk_count == CLKS_PER_BIT-1) begin
+
+                    clk_count <= 0;
+
+                    data_reg[bit_count] <= rx;
+
+                    if (bit_count == 3'd7) begin
+                        bit_count <= 0;
+                        state <= STOP;
+                    end
+
+                    else
+                        bit_count <= bit_count + 1'b1;
+
+                end
+
+                else
+                    clk_count <= clk_count + 1'b1;
+
+            end
+
+            STOP: begin
+
+                if (clk_count == CLKS_PER_BIT-1) begin
+
+                    clk_count <= 0;
+
+                    if (rx == 1'b1) begin
+                        data_out <= data_reg;
+                        data_valid <= 1'b1;
+                    end
+
+                    state <= IDLE;
+
+                end
+
+                else
+                    clk_count <= clk_count + 1'b1;
+
+            end
+
+        endcase
+
+    end
+
+end
+
+endmodule
