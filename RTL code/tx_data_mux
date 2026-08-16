@@ -1,0 +1,12 @@
+`timescale 1ns/1ps
+
+module tx_data_mux(
+    input [7:0] parallel_data,
+    input [7:0] serial_data,
+    input mode_select,
+    output [7:0] data_out
+);
+
+assign data_out = mode_select ? serial_data : parallel_data;
+
+endmodule
