@@ -1,0 +1,39 @@
+`timescale 1ns/1ps
+
+module rx_data_demux(
+    input [7:0] data_in,
+    input mode_select,
+    input valid,
+
+    output reg [7:0] parallel_data,
+    output reg parallel_valid,
+
+    output reg serial_data,
+    output reg serial_valid
+);
+
+always @(*) begin
+
+    parallel_data = 8'b0;
+    parallel_valid = 1'b0;
+
+    serial_data = 1'b0;
+    serial_valid = 1'b0;
+
+    if (mode_select == 1'b0) begin
+
+        parallel_data = data_in;
+        parallel_valid = valid;
+
+    end
+
+    else begin
+
+        serial_data = data_in[7];
+        serial_valid = valid;
+
+    end
+
+end
+
+endmodule
